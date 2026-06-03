@@ -70,6 +70,8 @@
         "foarte bun",
         "util",
         "rapid",
+        "rapida",
+        "rapidă",
         "recomand",
         "precis",
         "confortabil",
@@ -171,11 +173,14 @@
         );
     }
 
+    const STEM_TERMS = new Set(["material", "calitate", "livrare"]);
+
     function textHasTerm(text, term) {
         const t = foldDiacritics(text);
         const w = foldDiacritics(term).trim();
         if (!w) return false;
-        if (w.length <= 4) {
+        const useBoundary = w.length <= 4 || STEM_TERMS.has(w);
+        if (useBoundary) {
             const escaped = w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             return new RegExp(
                 `(?<![a-z\u0103\u00e2\u00ee\u0219\u021b037])${escaped}(?![a-z\u0103\u00e2\u00ee\u0219\u021b037])`,
@@ -533,6 +538,46 @@
         return li;
     }
 
+    function detailForAspect(data, aspect) {
+        return (data.detalii || []).find((d) => d.aspect === aspect) || null;
+    }
+
+    function buildBucketsFromApi(data) {
+        const byBucket = Object.fromEntries(ASPECT_BUCKETS.map((b) => [b, []]));
+        const groups = data.aspecte_pe_sentiment;
+        if (!groups || typeof groups !== "object") {
+            return byBucket;
+        }
+
+        ASPECT_BUCKETS.forEach((bucket) => {
+            const names = groups[bucket] || [];
+            names.forEach((aspect) => {
+                const item = detailForAspect(data, aspect);
+                byBucket[bucket].push(
+                    item || {
+                        aspect,
+                        sursa: "lexicon",
+                        scor: 1,
+                        sentiment: BUCKET_TO_TONE[bucket] || "neutru",
+                    }
+                );
+            });
+        });
+
+        (data.detalii || []).forEach((item) => {
+            const placed = ASPECT_BUCKETS.some((b) =>
+                byBucket[b].some((x) => x.aspect === item.aspect)
+            );
+            if (placed) return;
+            const bucket = bucketForAspect(data, item.aspect);
+            if (bucket && ASPECT_BUCKETS.includes(bucket)) {
+                byBucket[bucket].push(item);
+            }
+        });
+
+        return byBucket;
+    }
+
     function renderResults(data) {
         showPanelState("results");
 
@@ -543,14 +588,8 @@
             }
         });
 
-        const totalCount = data.detalii.length;
-        const byBucket = Object.fromEntries(ASPECT_BUCKETS.map((b) => [b, []]));
-        data.detalii.forEach((item) => {
-            const bucket = bucketForAspect(data, item.aspect);
-            if (bucket && ASPECT_BUCKETS.includes(bucket)) {
-                byBucket[bucket].push(item);
-            }
-        });
+        const totalCount = (data.detalii || []).length;
+        const byBucket = buildBucketsFromApi(data);
 
         const countPoz = byBucket.pozitive.length;
         const countNeg = byBucket.negative.length;
@@ -683,6 +722,7 @@
             const res = await fetch("/api/analyze", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
+                cache: "no-store",
                 body: JSON.stringify({ review }),
             });
             const data = await res.json();
@@ -712,18 +752,24 @@
     showPanelState("placeholder");
 
     const serverStatus = document.getElementById("server-status");
-    fetch("/health")
+    fetch("/health", { cache: "no-store" })
         .then((r) => r.json())
         .then((data) => {
             if (!serverStatus) return;
             const version = String(data.api_version || "");
             const versionNum = parseFloat(version);
-            if (data.sentiment_api && version && versionNum >= 2.1) {
-                serverStatus.textContent = `Server analiză v${version} (sentiment activ)`;
+            const lexVer = data.lexicon_version || "?";
+            const count = data.aspect_count || 0;
+            if (data.sentiment_api && version && versionNum >= 2.4) {
+                serverStatus.textContent = `Server v${version} · lexicon ${lexVer} · ${count} categorii`;
                 serverStatus.className = "server-status server-status-ok";
+            } else if (data.sentiment_api && versionNum >= 2.1) {
+                serverStatus.textContent =
+                    "Server vechi (sub v2.4) — opriți python app.py (Ctrl+C), porniți din nou, apoi Ctrl+F5.";
+                serverStatus.className = "server-status server-status-warn";
             } else {
                 serverStatus.textContent =
-                    "Server vechi detectat — opriți toate procesele python app.py și reporniți.";
+                    "Server foarte vechi — opriți toate procesele python app.py și reporniți.";
                 serverStatus.className = "server-status server-status-warn";
             }
             serverStatus.hidden = false;

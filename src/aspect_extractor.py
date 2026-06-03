@@ -27,6 +27,8 @@ BRAND_PREFIX_RE = re.compile(r"^[^:]+:\s*", re.IGNORECASE)
 CONTEXT_WINDOW = 90
 _SHORT_KEYWORD_MAX_LEN = 4
 _WORD_CHAR = r"a-zăâîșț037"
+# Cuvinte scurte/stem care apar în forme flexionate (ex. „material” în „materialului”)
+_STEM_KEYWORDS = frozenset({"material", "calitate", "livrare"})
 
 
 def normalize_review_text(text: str) -> str:
@@ -38,11 +40,12 @@ def normalize_review_text(text: str) -> str:
 
 
 def _keyword_in_text(keyword: str, normalized: str) -> bool:
-    """Evită potriviri false (ex. „dus” în „produsul”)."""
+    """Evită potriviri false (ex. „dus” în „produsul”, „material” în „materialului”)."""
     kw = keyword.strip().lower()
     if not kw:
         return False
-    if len(kw) <= _SHORT_KEYWORD_MAX_LEN:
+    use_boundary = len(kw) <= _SHORT_KEYWORD_MAX_LEN or kw in _STEM_KEYWORDS
+    if use_boundary:
         pattern = rf"(?<![{_WORD_CHAR}]){re.escape(kw)}(?![{_WORD_CHAR}])"
         return re.search(pattern, normalized) is not None
     return kw in normalized

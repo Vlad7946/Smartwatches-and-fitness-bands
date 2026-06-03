@@ -1,5 +1,8 @@
 """Lexicon de aspecte pentru review-uri de fitness trackers (română)."""
 
+# Versiune vizibilă în UI — creșteți la fiecare modificare a lexiconului
+LEXICON_VERSION = "2026.06.03"
+
 ASPECT_CATEGORIES = {
     "Design și confort": [
         "design",
@@ -10,7 +13,8 @@ ASPECT_CATEGORIES = {
         "confort",
         "brățar",
         "bratara",
-        "material",
+        "material premium",
+        "material confortabil",
         "ușor de purtat",
         "usor de purtat",
         "incomod",
@@ -63,6 +67,36 @@ ASPECT_CATEGORIES = {
         "calitate-preț",
         "calitate pret",
         "raport",
+    ],
+    "Calitate construcție și materiale": [
+        "calitate material",
+        "calitatea materialului",
+        "calitatea produsului",
+        "materialului",
+        "material slab",
+        "material bun",
+        "material de calitate",
+        "finisaj",
+        "construcție",
+        "constructie",
+        "calitate slabă",
+        "calitate slaba",
+        "calitate bună",
+        "calitate buna",
+    ],
+    "Livrare și logistică": [
+        "livrare",
+        "livră",
+        "livrata",
+        "livrat",
+        "livrarea",
+        "curier",
+        "expediere",
+        "ambalaj",
+        "transport",
+        "colet",
+        "a ajuns repede",
+        "a ajuns rapid",
     ],
     "Performanță": [
         "performan",

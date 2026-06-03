@@ -13,15 +13,27 @@ sys.path.insert(0, str(ROOT / "src"))
 
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
-API_VERSION = "2.2"
+API_VERSION = "2.4"
+
+
+def _lexicon_module():
+    """Lexicon proaspăt la fiecare request în development."""
+    import importlib
+
+    import aspect_lexicon
+
+    if os.environ.get("FLASK_DEBUG", "1").lower() in ("1", "true"):
+        importlib.reload(aspect_lexicon)
+    return aspect_lexicon
 
 
 @app.context_processor
 def inject_template_globals():
-    import aspect_lexicon
-
+    lex = _lexicon_module()
     return {
-        "aspect_keywords": dict(aspect_lexicon.ASPECT_CATEGORIES),
+        "aspect_keywords": dict(lex.ASPECT_CATEGORIES),
+        "api_version": API_VERSION,
+        "lexicon_version": getattr(lex, "LEXICON_VERSION", "unknown"),
     }
 
 
@@ -51,14 +63,18 @@ def _load_classifier():
 
 
 def get_aspect_categories() -> list[str]:
-    """Reîncarcă lexiconul în development; în producție folosește modulul încărcat."""
-    import importlib
+    return list(_lexicon_module().ASPECT_CATEGORIES.keys())
 
-    import aspect_lexicon
 
-    if os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true"):
-        importlib.reload(aspect_lexicon)
-    return list(aspect_lexicon.ASPECT_CATEGORIES.keys())
+@app.after_request
+def disable_dev_cache(response):
+    """Forțează HTML/JS/CSS proaspăt în browser la development."""
+    if os.environ.get("FLASK_DEBUG", "1").lower() in ("1", "true"):
+        ct = response.content_type or ""
+        if any(t in ct for t in ("text/html", "javascript", "text/css", "application/json")):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            response.headers["Pragma"] = "no-cache"
+    return response
 
 
 @app.route("/")
@@ -75,9 +91,12 @@ def index():
 
 @app.route("/health")
 def health():
+    lex = _lexicon_module()
     return jsonify({
         "status": "ok",
         "api_version": API_VERSION,
+        "lexicon_version": getattr(lex, "LEXICON_VERSION", "unknown"),
+        "aspect_count": len(lex.ASPECT_CATEGORIES),
         "model_loaded": _load_classifier() is not None,
         "sentiment_api": True,
     })
