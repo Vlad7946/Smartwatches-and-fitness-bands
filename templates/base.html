@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Aspect Analyzer{% endblock %} | Fitness Trackers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="brand">
+                <span class="brand-icon" aria-hidden="true">◆</span>
+                <span class="brand-text">Aspect Analyzer</span>
+            </a>
+            <p class="header-tagline">Identificare automată a aspectelor în review-uri</p>
+        </div>
+    </header>
+
+    <main class="site-main">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="site-footer">
+        <div class="container">
+            <p>Proiect TLU · Analiză aspect-based pe dataset fitness trackers</p>
+        </div>
+    </footer>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

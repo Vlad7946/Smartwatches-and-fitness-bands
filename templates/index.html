@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Analiză Review{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Analiză review fitness tracker</h1>
+    <p class="hero-lead">
+        Introduceți un review în limba română. Sistemul identifică aspectele discutate
+        folosind lexiconul de domeniu și modelul ML antrenat pe cele 1000 de înregistrări existente.
+    </p>
+    {% if not model_ready %}
+    <div class="alert alert-warning" role="alert">
+        Modelul ML nu este încă antrenat. Rulați <code>python scripts/label_reviews.py</code> pentru predicții complete.
+    </div>
+    {% endif %}
+</section>
+
+<div class="layout-grid">
+    <section class="card card-form">
+        <h2>Review nou</h2>
+        <form id="review-form" novalidate>
+            <label for="review" class="field-label">Text review</label>
+            <textarea
+                id="review"
+                name="review"
+                rows="6"
+                placeholder="Ex: Xiaomi: Baterie foarte bună și monitorizare precisă a activităților zilnice."
+                required
+            ></textarea>
+            <p class="field-hint">Format recomandat: <em>Brand: descriere review</em></p>
+            <button type="submit" class="btn btn-primary" id="submit-btn">
+                <span class="btn-label">Identifică aspectele</span>
+                <span class="btn-spinner" hidden aria-hidden="true"></span>
+            </button>
+        </form>
+    </section>
+
+    <section class="card card-side" id="side-panel" aria-live="polite">
+        <div class="panel-state" id="panel-placeholder">
+            <span class="panel-badge">Ghid</span>
+            <h2 id="panel-title">Cum funcționează analiza</h2>
+            <p class="panel-desc" id="panel-desc">
+                Completați review-ul în stânga, apoi apăsați butonul de analiză.
+                Aici veți vedea aspectele detectate automat.
+            </p>
+            <ol class="panel-steps">
+                <li>Scrieți un review în română (brand + descriere)</li>
+                <li>Sistemul aplică lexiconul de domeniu</li>
+                <li>Modelul ML confirmă aspectele pentru texte noi</li>
+            </ol>
+            <div class="panel-preview-box" id="panel-preview-box" hidden>
+                <p class="panel-preview-label">Text introdus</p>
+                <p class="panel-preview-text" id="panel-preview-text"></p>
+            </div>
+            <div class="panel-example">
+                <p class="panel-example-label">Exemplu</p>
+                <p class="panel-example-text">
+                    „FitBit: Sincronizare rapidă cu telefonul și notificări foarte utile.”
+                </p>
+            </div>
+        </div>
+
+        <div class="panel-state panel-state-loading" id="panel-loading" hidden>
+            <span class="panel-badge panel-badge-loading">Se analizează</span>
+            <h2>Analiză în curs</h2>
+            <p class="panel-desc">Identificăm aspectele din review-ul introdus…</p>
+            <div class="loading-bar" aria-hidden="true"><span></span></div>
+        </div>
+
+        <div class="panel-state" id="panel-results" hidden>
+            <span class="panel-badge panel-badge-results">Rezultate</span>
+            <h2>Aspecte identificate</h2>
+            <p class="results-summary" id="results-summary"></p>
+            <blockquote class="panel-review-quote" id="panel-review-quote"></blockquote>
+            <ul class="aspect-list" id="aspect-list"></ul>
+            <p class="results-empty" id="results-empty" hidden>
+                Nu s-au identificat aspecte pentru acest text.
+            </p>
+            <button type="button" class="btn btn-ghost" id="reset-panel-btn">
+                Analizează alt review
+            </button>
+        </div>
+    </section>
+</div>
+
+<section class="card card-taxonomy">
+    <h2>Taxonomie aspecte (domeniu) <span class="taxonomy-count">{{ aspect_count }} categorii</span></h2>
+    <div class="taxonomy-grid">
+        {% for aspect in aspect_categories %}
+        <span class="taxonomy-chip">{{ aspect }}</span>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% endblock %}
