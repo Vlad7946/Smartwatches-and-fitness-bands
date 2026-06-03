@@ -3,6 +3,9 @@
 ASPECT_CATEGORIES = {
     "Design și confort": [
         "design",
+        "atractiv",
+        "atractivă",
+        "atractiva",
         "confortabil",
         "confort",
         "brățar",
@@ -16,6 +19,7 @@ ASPECT_CATEGORIES = {
     "Display / Ecran": [
         "display",
         "ecran",
+        "amoled",
     ],
     "Baterie și autonomie": [
         "baterie",
@@ -116,8 +120,6 @@ ASPECT_CATEGORIES = {
         "începători",
         "incepatori",
         "utilizatori noi",
-        "complicat",
-        "greu de folosit",
     ],
 }
 
@@ -197,6 +199,10 @@ SENTIMENT_POSITIVE = [
     "intuitiva",
     "ușor de purtat",
     "usor de purtat",
+    "atractiv",
+    "atractivă",
+    "atractiva",
+    "amoled",
 ]
 
 NEGATION_PHRASES = [
