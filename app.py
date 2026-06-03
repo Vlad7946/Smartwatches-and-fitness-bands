@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -17,12 +18,13 @@ app.config["JSON_AS_ASCII"] = False
 
 
 def get_aspect_categories() -> list[str]:
-    """Reîncarcă lexiconul ca modificările să apară fără repornire manuală."""
+    """Reîncarcă lexiconul în development; în producție folosește modulul încărcat."""
     import importlib
 
     import aspect_lexicon
 
-    importlib.reload(aspect_lexicon)
+    if os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true"):
+        importlib.reload(aspect_lexicon)
     return list(aspect_lexicon.ASPECT_CATEGORIES.keys())
 
 
@@ -36,6 +38,11 @@ def index():
         aspect_count=len(categories),
         model_ready=model_ready,
     )
+
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok", "model_loaded": load_classifier() is not None})
 
 
 @app.route("/api/analyze", methods=["POST"])
@@ -67,9 +74,10 @@ def analyze():
 
 
 if __name__ == "__main__":
-    import os
+    on_railway = bool(os.environ.get("RAILWAY_ENVIRONMENT"))
+    port = int(os.environ.get("PORT", 8080 if on_railway else 5050))
+    host = "0.0.0.0" if on_railway or os.environ.get("BIND_ALL") else "127.0.0.1"
+    debug = not on_railway and os.environ.get("FLASK_DEBUG", "1").lower() in ("1", "true")
 
-    # Port 5000 e adesea blocat pe Windows (Hyper-V / excluded port range).
-    port = int(os.environ.get("PORT", 5050))
-    print(f"Server: http://127.0.0.1:{port}")
-    app.run(debug=True, host="127.0.0.1", port=port, use_reloader=False)
+    print(f"Server: http://{host}:{port}")
+    app.run(debug=debug, host=host, port=port, use_reloader=False)
