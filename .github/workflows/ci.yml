@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify imports and analysis
+        run: |
+          python -c "
+          import sys
+          sys.path.insert(0, 'src')
+          from aspect_extractor import identify_aspects
+          r = identify_aspects('Xiaomi: Baterie foarte buna.', use_ml=False)
+          assert r['ton_review'] == 'pozitiv'
+          print('OK', r['aspecte'])
+          "
+
+      - name: Health endpoint smoke test
+        run: |
+          pip install requests
+          python -c "
+          import subprocess, time, sys, urllib.request
+          proc = subprocess.Popen(
+              ['gunicorn', 'app:app', '--bind', '127.0.0.1:8765', '--timeout', '60'],
+              env={**__import__('os').environ, 'FLASK_DEBUG': '0'},
+          )
+          try:
+              for _ in range(30):
+                  try:
+                      with urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=2) as r:
+                          body = r.read().decode()
+                          assert 'api_version' in body
+                          print(body)
+                          break
+                  except Exception:
+                      time.sleep(1)
+              else:
+                  sys.exit('Server did not start')
+          finally:
+              proc.terminate()
+          "
