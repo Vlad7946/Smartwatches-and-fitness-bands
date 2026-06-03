@@ -422,13 +422,24 @@
 
     function resizeReviewTextarea() {
         if (!textarea) return;
-        const minH = parseFloat(getComputedStyle(textarea).minHeight) || 144;
-        const maxH = parseFloat(getComputedStyle(textarea).maxHeight) || 512;
+        const field = textarea.closest(".field");
+        const minH = parseFloat(getComputedStyle(textarea).minHeight) || 160;
+        let fillH = minH;
+
+        if (field) {
+            const label = field.querySelector(".field-top");
+            const labelGap = 8;
+            fillH = Math.max(
+                field.clientHeight - (label ? label.offsetHeight + labelGap : 0),
+                minH
+            );
+        }
+
         textarea.style.height = "auto";
-        const scrollH = textarea.scrollHeight;
-        const next = Math.min(Math.max(scrollH, minH), maxH);
+        const contentH = textarea.scrollHeight;
+        const next = Math.max(contentH, fillH);
         textarea.style.height = `${next}px`;
-        textarea.style.overflowY = scrollH > maxH ? "auto" : "hidden";
+        textarea.style.overflowY = contentH > fillH ? "auto" : "hidden";
     }
 
     function updateCharCount() {
@@ -513,7 +524,7 @@
                 : "";
 
         li.innerHTML = `
-            <span class="aspect-name">${escapeHtml(item.aspect)}</span>
+            <span class="aspect-name">${formatAspectLabel(item.aspect)}</span>
             <span class="aspect-meta">
                 <span class="badge ${badgeClass(item.sursa)}">${badgeLabel(item.sursa)}</span>
                 ${scoreHtml}
@@ -635,6 +646,13 @@
         return div.innerHTML;
     }
 
+    /** Evită „și” singur pe un rând în titluri tip „X și Y”. */
+    function formatAspectLabel(name) {
+        return escapeHtml(
+            String(name).replace(/\s+și\s+/gi, "\u00a0și\u00a0")
+        );
+    }
+
     textarea.addEventListener("input", () => {
         resizeReviewTextarea();
         updateCharCount();
@@ -644,6 +662,11 @@
     resizeReviewTextarea();
     updateCharCount();
     window.addEventListener("resize", resizeReviewTextarea);
+
+    const reviewField = textarea.closest(".field");
+    if (reviewField && typeof ResizeObserver !== "undefined") {
+        new ResizeObserver(() => resizeReviewTextarea()).observe(reviewField);
+    }
 
     resetPanelBtn.addEventListener("click", resetToPlaceholder);
 
