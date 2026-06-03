@@ -11,10 +11,43 @@ from flask import Flask, jsonify, render_template, request
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from aspect_extractor import identify_aspects, load_classifier
-
 app = Flask(__name__)
 app.config["JSON_AS_ASCII"] = False
+API_VERSION = "2.2"
+
+
+@app.context_processor
+def inject_template_globals():
+    import aspect_lexicon
+
+    return {
+        "aspect_keywords": dict(aspect_lexicon.ASPECT_CATEGORIES),
+    }
+
+
+def _reload_analysis_modules():
+    import importlib
+
+    import aspect_extractor
+    import aspect_lexicon
+
+    importlib.reload(aspect_lexicon)
+    importlib.reload(aspect_extractor)
+    return aspect_extractor
+
+
+def _identify_aspects(review_text: str, use_ml: bool = True):
+    """Reîncarcă modulele de analiză ca modificările să fie active fără repornire manuală."""
+    aspect_extractor = _reload_analysis_modules()
+    return aspect_extractor.identify_aspects(review_text, use_ml=use_ml)
+
+
+def _load_classifier():
+    import aspect_extractor
+
+    if os.environ.get("FLASK_DEBUG", "").lower() in ("1", "true"):
+        aspect_extractor = _reload_analysis_modules()
+    return aspect_extractor.load_classifier()
 
 
 def get_aspect_categories() -> list[str]:
@@ -30,7 +63,7 @@ def get_aspect_categories() -> list[str]:
 
 @app.route("/")
 def index():
-    model_ready = load_classifier() is not None
+    model_ready = _load_classifier() is not None
     categories = get_aspect_categories()
     return render_template(
         "index.html",
@@ -42,7 +75,12 @@ def index():
 
 @app.route("/health")
 def health():
-    return jsonify({"status": "ok", "model_loaded": load_classifier() is not None})
+    return jsonify({
+        "status": "ok",
+        "api_version": API_VERSION,
+        "model_loaded": _load_classifier() is not None,
+        "sentiment_api": True,
+    })
 
 
 @app.route("/api/analyze", methods=["POST"])
@@ -53,21 +91,25 @@ def analyze():
     if not review_text:
         return jsonify({"error": "Introduceți textul review-ului."}), 400
 
-    result = identify_aspects(review_text, use_ml=True)
+    result = _identify_aspects(review_text, use_ml=True)
     details = [
         {
             "aspect": aspect,
             "sursa": info["sursa"],
             "scor": round(info["scor"], 3),
+            "sentiment": info.get("sentiment", "neutru"),
         }
         for aspect, info in result["detalii"].items()
     ]
 
     return jsonify(
         {
+            "api_version": API_VERSION,
             "review": review_text,
-            "aspecte": result["aspecte"],
-            "aspecte_formatate": result["aspecte_formatate"],
+            "ton_review": result.get("ton_review", "neutru"),
+            "aspecte_pe_sentiment": result.get("aspecte_pe_sentiment", {}),
+            "aspecte": result.get("aspecte", []),
+            "aspecte_formatate": result.get("aspecte_formatate", ""),
             "detalii": details,
         }
     )
@@ -79,5 +121,7 @@ if __name__ == "__main__":
     host = "0.0.0.0" if on_railway or os.environ.get("BIND_ALL") else "127.0.0.1"
     debug = not on_railway and os.environ.get("FLASK_DEBUG", "1").lower() in ("1", "true")
 
-    print(f"Server: http://{host}:{port}")
+    print(f"Server v{API_VERSION}: http://{host}:{port}")
+    print("Verificare: http://127.0.0.1:{0}/health trebuie sa contina api_version".format(port))
+    # Fara reloader: un singur proces, evita serverul „fantoma” cu cod vechi
     app.run(debug=debug, host=host, port=port, use_reloader=False)

@@ -3,35 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#09090b">
+    <meta name="description" content="Analiză aspect-based și clasificare pe ton pentru review-uri fitness trackers în limba română.">
     <title>{% block title %}Aspect Analyzer{% endblock %} | Fitness Trackers</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3.0.0">
     {% block head %}{% endblock %}
 </head>
 <body>
-    <header class="site-header">
-        <div class="container header-inner">
-            <a href="/" class="brand">
-                <span class="brand-icon" aria-hidden="true">◆</span>
-                <span class="brand-text">Aspect Analyzer</span>
-            </a>
-            <p class="header-tagline">Identificare automată a aspectelor în review-uri</p>
-        </div>
-    </header>
+    <div class="app-shell">
+        <header class="site-header">
+            <div class="container header-inner">
+                <a href="/" class="brand" aria-label="Aspect Analyzer — pagina principală">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect width="28" height="28" rx="8" fill="url(#brand-grad)"/>
+                            <path d="M8 18V10l6 4 6-4v8" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                            <defs>
+                                <linearGradient id="brand-grad" x1="4" y1="4" x2="24" y2="24" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#6366f1"/>
+                                    <stop offset="1" stop-color="#22d3ee"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </span>
+                    <span class="brand-copy">
+                        <span class="brand-text">Aspect Analyzer</span>
+                        <span class="brand-sub">Fitness trackers · RO</span>
+                    </span>
+                </a>
+                <div class="header-meta">
+                    <span class="header-pill {% if model_ready %}header-pill--ok{% else %}header-pill--warn{% endif %}">
+                        {% if model_ready %}ML activ{% else %}Doar lexicon{% endif %}
+                    </span>
+                </div>
+            </div>
+        </header>
 
-    <main class="site-main">
-        <div class="container">
-            {% block content %}{% endblock %}
-        </div>
-    </main>
+        <main class="site-main">
+            <div class="container">
+                {% block content %}{% endblock %}
+            </div>
+        </main>
 
-    <footer class="site-footer">
-        <div class="container">
-            <p>Proiect TLU · Analiză aspect-based pe dataset fitness trackers</p>
-        </div>
-    </footer>
+        <footer class="site-footer">
+            <div class="container footer-inner">
+                <div class="footer-brand">
+                    <strong>Aspect Analyzer</strong>
+                    <span>Proiect TLU</span>
+                </div>
+                <p class="footer-note">Analiză aspect-based pe dataset fitness trackers · Lexicon + clasificator ML</p>
+            </div>
+        </footer>
+    </div>
 
     {% block scripts %}{% endblock %}
 </body>
